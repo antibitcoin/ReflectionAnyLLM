@@ -36,6 +36,7 @@ function callOpenAI($messages, $stream) {
     $api_key = 'your-api-key-here'; // Add your API key here if using some online thingy like groq or openrouter or openai
     $headers = [
         'Content-Type: application/json',
+        'Authorization: Bearer ' . $api_key,
     ];
 
     $postData = [
