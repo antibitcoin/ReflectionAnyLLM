@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ReflectionAnyLLM - by ANTIBITCOIN</title>
+    <!-- Include Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Include DOMPurify for sanitizing HTML -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.3/dist/purify.min.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans">
+    <div id="chat-container" class="flex flex-col h-screen">
+        <div id="chat-window" class="flex-1 p-4 overflow-y-auto">
+            <!-- Chat messages will be appended here -->
+        </div>
+        <form id="message-form" class="flex items-center p-4 bg-gray-800">
+            <input type="text" id="message-input" placeholder="Type your message here..." autocomplete="off" autofocus
+                class="flex-1 p-2 bg-gray-700 border border-gray-600 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-l-md">
+            <button type="submit" id="send-button"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-r-md">
+                Send
+            </button>
+            <button type="button" id="clear-button"
+                class="ml-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-md">
+                Clear
+            </button>
+            <button type="button" id="download-button"
+                class="ml-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-md">
+                Download History
+            </button>
+        </form>
+    </div>
+    <script>
+        // Initialize chat history from localStorage
+        let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+
+        // Function to save chat history to localStorage
+        function saveChatHistory() {
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+        }
+
+        // Function to clear chat history
+        function clearChatHistory() {
+            localStorage.removeItem('chatHistory');
+            chatHistory = [];
+            location.reload();
+        }
+
+        // Function to download chat history
+        function downloadChatHistory() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatHistory, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "chat_history.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        // Function to load chat history and display messages
+        function loadChatHistory() {
+            chatHistory.forEach(entry => {
+                if (entry.sender === 'system') {
+                    // Handle system messages if any
+                } else if (entry.sender === 'thought_process') {
+                    // Add "Show Thought Process" button for this thought process
+                    addThoughtProcessButton(entry.text);
+                } else {
+                    addMessageToChat(entry.sender, entry.text, entry.isMarkdown, false);
+                }
+            });
+        }
+
+        // Call loadChatHistory on page load
+        loadChatHistory();
+
+        document.getElementById('clear-button').addEventListener('click', clearChatHistory);
+        document.getElementById('download-button').addEventListener('click', downloadChatHistory);
+
+        document.getElementById('message-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const inputField = document.getElementById('message-input');
+            const message = inputField.value.trim();
+            if (message === '') return;
+
+            addMessageToChat('user', message);
+            chatHistory.push({ sender: 'user', text: message });
+            saveChatHistory();
+            inputField.value = '';
+
+            // Display "Thinking..." label
+            const thinkingElement = addThinkingLabel();
+
+            // Prepare the chat history to send to the backend (excluding thought processes)
+            const historyForBackend = chatHistory.filter(entry => entry.sender !== 'thought_process');
+
+            // Send the message to the server via fetch
+            fetch('chat.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    history: historyForBackend.slice(-10) // Implement rolling window
+                }),
+            })
+            .then(response => {
+                if (!response.body) {
+                    throw new Error('ReadableStream not supported in this browser.');
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let thoughtProcess = '';
+                let assistantMessageElement = null;
+                let assistantContentElement = null;
+                let isStreaming = false;
+
+                // Collect the assistant's response to render after streaming completes
+                let assistantContentBuffer = '';
+
+                function read() {
+                    reader.read().then(({done, value}) => {
+                        if (done) {
+                            // Remove "Thinking..." label if still present
+                            removeThinkingLabel(thinkingElement);
+
+                            // After streaming is done, parse and render the assistant's content
+                            if (assistantContentElement && assistantContentBuffer) {
+                                renderMarkdownContent(assistantContentElement, assistantContentBuffer);
+                            }
+
+                            // Save assistant's message to chat history
+                            chatHistory.push({ sender: 'assistant', text: assistantContentBuffer, isMarkdown: true });
+                            saveChatHistory();
+
+                            return;
+                        }
+
+                        // Decode the chunk and add it to the buffer
+                        let chunk = decoder.decode(value, {stream: true});
+                        buffer += chunk;
+
+                        // Process the buffer for SSE messages
+                        let sseMessages = buffer.split(/\r?\n\r?\n/);
+                        buffer = sseMessages.pop(); // Save incomplete data for next read
+
+                        for (let message of sseMessages) {
+                            message = message.trim();
+                            if (message.startsWith('data: ')) {
+                                let dataStr = message.slice(6).trim(); // Remove 'data: ' and trim
+                                if (dataStr === '[DONE]') {
+                                    // Streaming finished
+                                    removeThinkingLabel(thinkingElement);
+                                    // After streaming is done, parse and render the assistant's content
+                                    if (assistantContentElement && assistantContentBuffer) {
+                                        renderMarkdownContent(assistantContentElement, assistantContentBuffer);
+                                    }
+
+                                    // Save assistant's message to chat history
+                                    chatHistory.push({ sender: 'assistant', text: assistantContentBuffer, isMarkdown: true });
+                                    saveChatHistory();
+
+                                    return;
+                                }
+
+                                try {
+                                    let data = JSON.parse(dataStr);
+
+                                    if (!isStreaming && data.thought_process) {
+                                        // Received thought process
+                                        thoughtProcess = data.thought_process;
+                                        removeThinkingLabel(thinkingElement);
+                                        addThoughtProcessButton(thoughtProcess);
+
+                                        // Save the thought process in chatHistory
+                                        chatHistory.push({ sender: 'thought_process', text: thoughtProcess });
+                                        saveChatHistory();
+
+                                        // Prepare the assistant message element
+                                        ({ messageElement: assistantMessageElement, contentElement: assistantContentElement } = addMessageToChat('assistant', '', true));
+                                        isStreaming = true;
+                                    } else if (isStreaming && data.choices && data.choices[0].delta) {
+                                        let content = data.choices[0].delta.content || '';
+
+                                        // Append content to the assistant's message buffer
+                                        assistantContentBuffer += content;
+
+                                        // Render the partial content
+                                        renderMarkdownContent(assistantContentElement, assistantContentBuffer);
+                                    } else if (data.error) {
+                                        console.error('Error from server:', data.error);
+                                        removeThinkingLabel(thinkingElement);
+                                        addMessageToChat('assistant', 'Error: ' + data.error);
+                                        return;
+                                    }
+                                } catch (e) {
+                                    console.error('Error parsing JSON:', e, 'Data:', dataStr);
+                                    removeThinkingLabel(thinkingElement);
+                                    addMessageToChat('assistant', 'Error parsing response.');
+                                    return;
+                                }
+                            }
+                        }
+
+                        // Continue reading
+                        read();
+                    }).catch(error => {
+                        console.error('Error reading stream:', error);
+                        removeThinkingLabel(thinkingElement);
+                        addMessageToChat('assistant', 'Error reading stream.');
+                    });
+                }
+
+                // Start reading the stream
+                read();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                removeThinkingLabel(thinkingElement);
+                addMessageToChat('assistant', 'Error: Unable to communicate with the server.');
+            });
+        });
+
+        // Function to add "Thinking..." label with animation
+        function addThinkingLabel() {
+            const chatWindow = document.getElementById('chat-window');
+            const thinkingElement = document.createElement('div');
+            thinkingElement.id = 'thinking-label';
+            thinkingElement.className = 'flex items-center my-2';
+            thinkingElement.innerHTML = `
+                <div class="loader mr-2"></div>
+                <span>Thinking...</span>
+            `;
+            chatWindow.appendChild(thinkingElement);
+            scrollChatToBottom();
+            return thinkingElement;
+        }
+
+        // Function to remove "Thinking..." label
+        function removeThinkingLabel(element) {
+            if (element && element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        }
+
+        // Function to add "Show Thought Process" button with toggle
+        function addThoughtProcessButton(thoughtProcess) {
+            const chatWindow = document.getElementById('chat-window');
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'my-2';
+
+            const buttonElement = document.createElement('button');
+            buttonElement.textContent = 'Show Thought Process';
+            buttonElement.className = 'px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-md focus:outline-none';
+            buttonElement.addEventListener('click', function() {
+                if (thoughtElement.classList.contains('hidden')) {
+                    thoughtElement.classList.remove('hidden');
+                    buttonElement.textContent = 'Hide Thought Process';
+                } else {
+                    thoughtElement.classList.add('hidden');
+                    buttonElement.textContent = 'Show Thought Process';
+                }
+                scrollChatToBottom();
+            });
+
+            const thoughtElement = document.createElement('div');
+            thoughtElement.className = 'thought-process bg-gray-800 p-4 rounded-md mt-2 hidden';
+            renderMarkdownContent(thoughtElement, thoughtProcess);
+
+            buttonContainer.appendChild(buttonElement);
+            buttonContainer.appendChild(thoughtElement);
+            chatWindow.appendChild(buttonContainer);
+            scrollChatToBottom();
+        }
+
+        // Function to display messages in the chat window
+        function addMessageToChat(sender, text, isMarkdown = false, saveToHistory = true) {
+            const chatWindow = document.getElementById('chat-window');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender === 'user' ? 'user-message' : 'assistant-message', 'my-2');
+            const contentElement = document.createElement('div');
+            contentElement.classList.add('message-content', 'px-4', 'py-2', 'rounded-md', 'inline-block', 'max-w-3/4');
+
+            if (sender === 'user') {
+                messageElement.classList.add('text-right');
+                contentElement.classList.add('bg-blue-600', 'text-white');
+                contentElement.classList.add('ml-auto');
+            } else {
+                messageElement.classList.add('text-left');
+                contentElement.classList.add('bg-gray-800', 'text-gray-100');
+            }
+
+            messageElement.appendChild(contentElement);
+
+            if (isMarkdown && sender === 'assistant') {
+                renderMarkdownContent(contentElement, text);
+            } else {
+                contentElement.textContent = text;
+            }
+
+            chatWindow.appendChild(messageElement);
+            scrollChatToBottom();
+            return { messageElement, contentElement };
+        }
+
+        // Function to render Markdown content
+        function renderMarkdownContent(contentElement, markdownText) {
+            try {
+                const rawHTML = marked.parse(markdownText);
+                const sanitizedHTML = DOMPurify.sanitize(rawHTML);
+                contentElement.innerHTML = sanitizedHTML;
+            } catch (e) {
+                console.error('Error rendering Markdown:', e);
+                contentElement.textContent = markdownText;
+            }
+            scrollChatToBottom();
+        }
+
+        // Function to scroll chat to bottom
+        function scrollChatToBottom() {
+            const chatWindow = document.getElementById('chat-window');
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // CSS for the thinking animation
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .loader {
+                border: 4px solid rgba(255, 255, 255, 0.2);
+                border-top: 4px solid #ffffff;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+    </script>
+</body>
+</html>
