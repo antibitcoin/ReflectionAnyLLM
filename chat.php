@@ -39,11 +39,13 @@ if ($userMessage === '') {
 function callOpenAI($messages, $stream) {
     $api_url = 'http://macbook:1234/v1/chat/completions'; // Feel free to change this to something cooler
     $model = 'llama-3.1'; // Of course, this llama is well-trained
+    $api_key = "API-KEY-HERE" // not really important if using local LLM, you might need it if using groq, openrouter, or openai.
     $temperature = 0.8; // Keeping things spicy but not too spicy
     $max_tokens = 4000; // Let’s not make the AI too chatty
 
     $headers = [
         'Content-Type: application/json',
+         'Authorization: Bearer ' . $api_key, // Add the Authorization header with the API key
     ];
 
     $postData = [
