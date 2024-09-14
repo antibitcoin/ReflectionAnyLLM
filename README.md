@@ -3,7 +3,8 @@
 [Click here to watch the video](ReflectionAnyLLM.mp4)
 sorry for the quality
 
-
+Online demo: https://freemindgpt.com/reflectionanyllm/  
+might or might not work depend on usage, its on the free tier of openrouter.
 
 This project demonstrates a basic chain-of-thought interaction with any LLM (Large Language Model), whether local or hosted remotely, provided it supports the OpenAI-compatible API. You can easily swap out the endpoint and API key to work with various providers such as:
 
