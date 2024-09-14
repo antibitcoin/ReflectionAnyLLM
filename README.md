@@ -38,4 +38,14 @@ While MySQL is not required, you will need a web server capable of running PHP w
 └── chat.php     # PHP script to handle the backend logic
 ```
 
-[disclaimer: This project is for fun, and I usually dont share this stuff but I was asked to do so on reddit, if you want to fork and improve on it I will make sure to accept your commits, the chain of though is 2 steps because my M1 mac is slow and I cannot afford the wait, you can expand it as much as you want by calling the function again and again, the front end and the back end code is not secure and not for production, I uploaded this in a hurry, if you want me to continue working on it let me know, but I don't think its worth anything at this point]
+## Disclaimer
+
+This project is purely for fun, and I usually don’t share this type of work, but I was asked to do so on Reddit. If you want to fork it and improve upon it, I’ll make sure to accept your commits.
+
+A few things to note:
+- The chain-of-thought implementation is only 2 steps because my M1 Mac is slow, and I can’t afford the wait. You can expand it as much as you want by calling the function repeatedly.
+- **Important**: The front-end and back-end code is **not secure** and should **not be used for production** environments.
+- I uploaded this in a hurry. If you'd like me to continue working on it, let me know—but I don’t believe it's worth much at this point.
+
+Feel free to explore, modify, and share your improvements!
+
