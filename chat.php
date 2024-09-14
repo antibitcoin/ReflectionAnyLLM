@@ -1,11 +1,11 @@
 <?php
 // chat.php
-// Increase timeout because patience is a virtue, but we’re still coding, not meditating
+// Increase timeout because some servers are slow as molasses
 ini_set('default_socket_timeout', 3600);
-// Increase PHP runtime because some chats just never end...
+// Increase PHP runtime because, well, who knows how long this chat will go...
 set_time_limit(3600);
 
-// Turn off output buffering to let the data flow like a river (or something poetic)
+// Turn off output buffering because we’re here for real-time action, not slow-mo
 if (function_exists('apache_setenv')) {
     apache_setenv('no-gzip', '1');
 }
@@ -17,35 +17,36 @@ header('Content-Type: text/event-stream; charset=UTF-8');
 header('Cache-Control: no-cache');
 header('Connection: keep-alive');
 
-// Get the POST data like it's a gift, but carefully
+// Get the POST data, because user messages don’t just float in the ether
 $data = json_decode(file_get_contents('php://input'), true);
 
-// Validate that JSON is valid because life’s too short to deal with bad JSON
-if (json_last_error() !== JSON_ERROR_NONE) {
-    echo "data: " . json_encode(['error' => 'Invalid JSON data.']) . "\n\n";
-    exit;
-}
-
-// Sanitize user input because we don't want any mischief-makers injecting bad stuff
+// Sanitize the user's message and history because we don’t trust anyone, even ourselves
 $userMessage = isset($data['message']) ? htmlspecialchars(trim($data['message']), ENT_QUOTES, 'UTF-8') : '';
-$chatHistory = isset($data['history']) ? array_map('htmlspecialchars', $data['history']) : [];
+$chatHistory = isset($data['history']) ? array_map(function($item) {
+    // Gotta clean those inputs or your app might explode. Or, you know, just not work.
+    return [
+        'sender' => htmlspecialchars(trim($item['sender']), ENT_QUOTES, 'UTF-8'),
+        'text' => htmlspecialchars(trim($item['text']), ENT_QUOTES, 'UTF-8')
+    ];
+}, $data['history']) : [];
 
 if ($userMessage === '') {
+    // No message? No chat. That’s just how this works.
     echo "data: " . json_encode(['error' => 'Empty message.']) . "\n\n";
     exit;
 }
 
-// Function to call the AI API, making sure everything is as secure as possible
+// Function to call the AI API (aka the magic spell function)
 function callOpenAI($messages, $stream) {
-    $api_url = 'http://macbook:1234/v1/chat/completions'; // Feel free to change this to something cooler
-    $model = 'llama-3.1'; // Of course, this llama is well-trained
-    $api_key = "API-KEY-HERE"; // not really important if using local LLM, you might need it if using groq, openrouter, or openai.
-    $temperature = 0.8; // Keeping things spicy but not too spicy
-    $max_tokens = 4000; // Let’s not make the AI too chatty
+    $api_url = 'YOUR_API_ENDPOINT_HERE'; // Replace with your API endpoint, unless you're feeling adventurous
+    $model = 'YOUR_MODEL_HERE'; // Replace with your model, or don't, we don't judge
+    $api_key = "YOUR_API_KEY_HERE"; // Replace with your API key, aka the golden ticket
+    $temperature = 0.8; // Keep it cool, but not too cool
+    $max_tokens = 4000; // Because nobody likes a chatty AI... except when they do
 
     $headers = [
         'Content-Type: application/json',
-         'Authorization: Bearer ' . $api_key, // Add the Authorization header with the API key
+        'Authorization: Bearer ' . $api_key, // Because without this, nobody's listening
     ];
 
     $postData = [
@@ -61,29 +62,29 @@ function callOpenAI($messages, $stream) {
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
 
     if ($stream) {
-        // For streaming, like binge-watching a series but nerdier
+        // For streaming, like binge-watching a show, but with more data and fewer popcorn breaks
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
         curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $data) {
-            // Ensure data is in SSE format because that's how we roll
+            // Stream data like it’s hot! Or at least lukewarm...
             $lines = explode("\n", $data);
             foreach ($lines as $line) {
                 $line = trim($line);
                 if ($line === '') {
-                    continue; // We don’t want to waste bandwidth on blank lines, do we?
+                    continue; // Nobody likes empty lines. Not even AI.
                 }
                 if (strpos($line, 'data: ') === 0) {
-                    // Already in SSE format, yay!
+                    // Already in SSE format, gold star!
                     echo $line . "\n\n";
                 } else {
-                    // Prepend 'data: ' if missing, because we’re perfectionists
+                    // Prepend 'data: ' because we’re nice like that
                     echo "data: " . $line . "\n\n";
                 }
-                flush(); // Because nobody likes waiting
+                flush(); // Flush it like a plumber in a rush
             }
             return strlen($data);
         });
     } else {
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Get the result, no drama
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return the result, no drama
     }
 
     $response = curl_exec($ch);
@@ -96,7 +97,7 @@ function callOpenAI($messages, $stream) {
         } else {
             return ['error' => $error_msg];
         }
-        exit;
+        exit; // It didn’t work, so let’s just walk away casually
     }
 
     curl_close($ch);
@@ -105,18 +106,20 @@ function callOpenAI($messages, $stream) {
         $result = json_decode($response, true);
 
         if (isset($result['choices'][0]['message']['content'])) {
+            // Success! The AI has spoken.
             return ['content' => $result['choices'][0]['message']['content']];
         } else {
+            // Something went wrong. Did we break the AI?
             return ['error' => 'API response error: ' . json_encode($result)];
         }
     }
 }
 
-// Prepare messages for the first API call (AI1)
+// Prepare messages for the first API call (AI1) – because one AI is never enough
 $messagesFirstCall = [];
 
-// Add recent chat history (excluding thought processes because we like a clean slate)
-$historyLimit = 10; // Limit history to keep things manageable
+// Add recent chat history (excluding thought processes, because we’re not overthinkers, right?)
+$historyLimit = 10; // We don’t need AI to remember everything, just the juicy bits
 $recentHistory = array_slice($chatHistory, -$historyLimit);
 
 foreach ($recentHistory as $entry) {
@@ -125,49 +128,48 @@ foreach ($recentHistory as $entry) {
     } else if ($entry['sender'] === 'assistant') {
         $messagesFirstCall[] = ['role' => 'assistant', 'content' => $entry['text']];
     }
-    // Exclude 'thought_process' entries because AI doesn’t need to overthink things
 }
 
-// Add system prompt for AI1, because AI needs instructions too
+// Add system prompt for AI1, because every good AI needs a little nudge in the right direction
 $systemPromptAI1 = "Help solve the user's request by generating a detailed step-by-step plan.
-Please ensure that your thought process is clear and detailed, as if you are instructing your self on how to tailor an answer.
-do not return an answer, just return the thought process as if it's between you and yourself.
+Please ensure that your thought process is clear and detailed, as if you are instructing yourself on how to tailor an answer.
+Do not return an answer, just return the thought process as if it's between you and yourself.
 Please provide your response strictly in the following format and respect the <THOUGHT> tags:
 <THOUGHT> [Your short step-by-step plan] </THOUGHT>";
 
 $messagesFirstCall[] = ['role' => 'system', 'content' => $systemPromptAI1];
 
-// Add the user's message (because that’s kind of the whole point)
+// Add the user's message, because that’s what this is all about
 $messagesFirstCall[] = ['role' => 'user', 'content' => $userMessage];
 
-// First API call (no pressure, but this better work)
+// First API call (no pressure, AI)
 $firstResponse = callOpenAI($messagesFirstCall, false);
 
 if (isset($firstResponse['error'])) {
+    // Error? Oh no! Better luck next API call...
     echo "data: " . json_encode(['error' => 'Error in first API call: ' . $firstResponse['error']]) . "\n\n";
     exit;
 }
 
 $thoughtProcess = $firstResponse['content'];
 
-// Send the thought process as the first SSE message (optional, for "Show Thought Process" feature)
+// Send the thought process as the first SSE message (optional, for those who love deep thoughts)
 echo "data: " . json_encode(['thought_process' => $thoughtProcess]) . "\n\n";
-flush();
+flush(); // Because we’re not keeping secrets here
 
-// Prepare messages for the second API call (AI2) because one AI isn't enough sometimes
+// Prepare messages for the second API call (AI2) – because two AIs are better than one
 $messagesSecondCall = [];
 
-// Add recent chat history to AI2 as well, we don’t play favorites
+// Add recent chat history to AI2 as well (we don’t play favorites here)
 foreach ($recentHistory as $entry) {
     if ($entry['sender'] === 'user') {
         $messagesSecondCall[] = ['role' => 'user', 'content' => $entry['text']];
     } else if ($entry['sender'] === 'assistant') {
         $messagesSecondCall[] = ['role' => 'assistant', 'content' => $entry['text']];
     }
-    // Again, exclude 'thought_process' entries because we don’t need AI introspection
 }
 
-// Add system prompt for AI2, the grand finale AI
+// Add system prompt for AI2 – time for the big finale
 $systemPromptAI2 = "You are a human reflecting on your own thought process to provide a refined final answer to the user.
 
 Here is your thought process:
@@ -185,13 +187,13 @@ $userMessage";
 
 $messagesSecondCall[] = ['role' => 'system', 'content' => $systemPromptAI2];
 
-// Add the user's message again, just to be safe
+// Add the user's message again, just for good measure
 $messagesSecondCall[] = ['role' => 'user', 'content' => $userMessage];
 
-// Second API call (bring it home, AI2)
+// Second API call – let's hope AI gets it right this time
 callOpenAI($messagesSecondCall, true);
 
-// End the SSE stream because all good things must come to an end
+// End the SSE stream, because all good things must come to an end
 echo "data: [DONE]\n\n";
-flush();
+flush(); // We’re done here. Go home, folks!
 ?>
