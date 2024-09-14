@@ -1,5 +1,5 @@
 # ReflectionAnyLLM
-
+[note: This project is for fun, and I usually dont share this stuff but I was asked to do so on reddit, if you want to fork and improve on it I will make sure to accept your commits, the chain of though is 2 steps because my M1 mac is slow and I cannot afford the wait, you can expand it as much as you want by calling the function again and again, the front end and the back end code is not secure and not for production, I uploaded this in a hurry, if you want me to continue working on it let me know, but I don't think its worth anything at this point]
 This project demonstrates a basic chain-of-thought interaction with any LLM (Large Language Model), whether local or hosted remotely, provided it supports the OpenAI-compatible API. You can easily swap out the endpoint and API key to work with various providers such as:
 
 - LMSTUDIO
