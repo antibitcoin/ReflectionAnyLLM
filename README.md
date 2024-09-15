@@ -1,5 +1,6 @@
 # ReflectionAnyLLM
-![A preview of it used with Gemma 2 9b LLM]([Screenshot20%2024-09-15 204649.png](https://github.com/antibitcoin/ReflectionAnyLLM/blob/4f4dde0daf04a279ce995918cc9023b66cb7c14b/Screenshot%202024-09-15%20204649.png?raw=true))
+![A preview of it used with Gemma 2 9b LLM](https://raw.githubusercontent.com/antibitcoin/ReflectionAnyLLM/4f4dde0daf04a279ce995918cc9023b66cb7c14b/Screenshot%202024-09-15%20204649.png)
+
 
 [![Watch the Video](ReflectionAnyLLM.mp4)](ReflectionAnyLLM.mp4)  
 *Note: The video quality might not be optimal—apologies for that.*
