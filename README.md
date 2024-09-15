@@ -12,6 +12,8 @@
 
 ## Project Overview
 
+This was request to share with the public on the following reddit thread by me https://www.reddit.com/r/LocalLLaMA/comments/1fgo671/openai_sent_me_an_email_threatening_a_ban_if_i/ 
+
 **ReflectionAnyLLM** is a lightweight proof-of-concept that enables basic chain-of-thought (CoT) reasoning with any Large Language Model (LLM) that supports the OpenAI-compatible API. The flexibility of this project allows it to interface with local or remote LLMs, giving you the ability to switch between providers with minimal setup.
 
 The project can be integrated with multiple LLM providers, including but not limited to:
