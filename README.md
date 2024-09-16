@@ -1,7 +1,6 @@
 # ReflectionAnyLLM
 ![A preview of it used with Gemma 2 9b LLM](https://raw.githubusercontent.com/antibitcoin/ReflectionAnyLLM/4f4dde0daf04a279ce995918cc9023b66cb7c14b/Screenshot%202024-09-15%20204649.png)
 
-
 [![Watch the Video](ReflectionAnyLLM.mp4)](ReflectionAnyLLM.mp4)  
 *Note: The video quality might not be optimal—apologies for that.*
 
@@ -12,13 +11,13 @@
 
 ## Project Overview
 
-This was request to share with the public on the following reddit thread by me https://www.reddit.com/r/LocalLLaMA/comments/1fgo671/openai_sent_me_an_email_threatening_a_ban_if_i/ 
+This was requested to share with the public on the following Reddit thread by me: https://www.reddit.com/r/LocalLLaMA/comments/1fgo671/openai_sent_me_an_email_threatening_a_ban_if_i/
 
 **ReflectionAnyLLM** is a lightweight proof-of-concept that enables basic chain-of-thought (CoT) reasoning with any Large Language Model (LLM) that supports the OpenAI-compatible API. The flexibility of this project allows it to interface with local or remote LLMs, giving you the ability to switch between providers with minimal setup.
 
 The project can be integrated with multiple LLM providers, including but not limited to:
 
-- **LMSTUDIO**
+- **LM Studio**
 - **Groq**
 - **OpenRouter**
 - **OpenAI API**
@@ -29,10 +28,15 @@ By replacing the API key and endpoint, you can easily adapt this project to work
 
 ## Features
 
-- **Chain-of-Thought Reasoning**: ReflectionAnyLLM implements a 2-step reasoning process, allowing you to explore how CoT works with basic LLM interactions.
+- **Chain-of-Thought Reasoning**: ReflectionAnyLLM implements a reasoning process with steps dynamically determined by the LLM itself. The model can create up to 10 reasoning steps, and this limit can be increased by editing the `chat.php` file.
+- **Thought Process Summary**: The detailed thought process is hidden by default to keep the page and history neat, but a summary is displayed for quick reference.
+- **History Management**: The project keeps track of the last 30 messages to maintain a concise history and optimize performance.
+- **Strawberry Count Problem**: The model can solve tasks like the "strawberry count" problem on almost any model larger than 8 billion parameters.
 - **API Flexibility**: Easily switch between different LLM providers by modifying the API endpoint and key.
 - **Simple Setup**: The project is lightweight and doesn't require a complex database or backend setup.
-  
+- **Downloadable Chat History**: Users can download their chat history as JSON for reference or further processing.
+- **Clear Chat**: Clear your chat history with a simple click.
+
 ---
 
 ## Getting Started
@@ -96,7 +100,9 @@ This flexibility allows the project to be used with any compatible LLM service, 
 
 This project was developed as a quick demo and should be considered a **prototype**. Here are some key things to note:
 
-- **Chain of Thought (CoT) Reasoning**: The current implementation only supports a 2-step CoT interaction, mainly because of the performance limitations of my M1 Mac. However, you can extend this by modifying the logic to call the function iteratively.
+- **Reasoning Steps**: The number of reasoning steps is dynamically decided by the LLM and can go up to 10. You can increase this limit by editing the logic in `chat.php`.
+- **Chain of Thought (CoT) Reasoning**: The current implementation uses dynamic reasoning steps to simulate how CoT works with larger models like GPT-4o or LLaMA 3.1. It can perform simple reasoning tasks, such as solving the "strawberry count" problem on models larger than 8 billion parameters.
+- **Thought Process Summary**: To keep the history and page clean, the full thought process is hidden, and only a summary is shown. Users can toggle to see the detailed process if needed.
 - **Security Warning**: The code, especially the back-end `chat.php`, is **not secured** and is not suitable for production environments. It was created quickly to demonstrate basic functionality and lacks robust security practices.
 - **Improvement Potential**: Although this project is functional, it is by no means polished or optimized. If you're interested in improving it, feel free to fork the repository and submit a pull request. I'm open to reviewing and merging community contributions.
 
@@ -107,7 +113,7 @@ This project was developed as a quick demo and should be considered a **prototyp
 While this project serves as a simple demonstration of basic LLM interactions, it can be expanded in several ways:
 
 1. **Enhanced Chain-of-Thought**: Extend the CoT process to allow for more complex reasoning and interaction.
-2. **UI/UX Improvements**: Improve the front-end design and add features like loading indicators and error handling.
+2. **UI/UX Improvements**: Improve the front-end design and add features like loading indicators, download history functionality, clear history button, and better error handling.
 3. **Security Enhancements**: Implement more secure coding practices, especially on the back-end, to prevent potential vulnerabilities.
 
 If there’s interest from the community, I may continue developing and improving this project. Feedback and suggestions are welcome!
