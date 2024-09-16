@@ -2,17 +2,19 @@
 <html>
 <head>
     <title>ReflectionAnyLLM - by ANTIBITCOIN</title>
-    <!-- Include Tailwind CSS -->
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Include Marked.js for Markdown parsing -->
+    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- Include DOMPurify for sanitizing HTML -->
+    
     <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.3/dist/purify.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans">
     <div id="chat-container" class="flex flex-col h-screen">
         <div id="chat-window" class="flex-1 p-4 overflow-y-auto">
-            <!-- Chat messages will be appended here -->
+            
         </div>
         <form id="message-form" class="flex items-center p-4 bg-gray-800">
             <input type="text" id="message-input" placeholder="Type your message here..." autocomplete="off" autofocus
@@ -30,6 +32,16 @@
                 Download History
             </button>
         </form>
+        
+        <footer class="p-4 bg-gray-800 text-center text-gray-400">
+            <span>Project developed by <a href="https://freemindgpt.com" target="_blank" class="text-blue-400 hover:text-blue-500">FreeMindGPT</a></span>
+            <a href="https://github.com/antibitcoin/ReflectionAnyLLM/edit/main/index.html" target="_blank" class="ml-2 text-gray-400 hover:text-gray-100 inline-flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24" class="mr-1">
+                    <path d="M12 0C5.373 0 0 5.373 0 12c0 5.303 3.438 9.8 8.207 11.387.6.111.793-.261.793-.581 0-.286-.01-1.04-.015-2.04-3.338.726-4.042-1.609-4.042-1.609-.546-1.385-1.333-1.755-1.333-1.755-1.09-.745.083-.73.083-.73 1.204.085 1.838 1.237 1.838 1.237 1.07 1.835 2.807 1.305 3.492.998.108-.774.418-1.305.761-1.605-2.665-.304-5.466-1.332-5.466-5.93 0-1.31.469-2.382 1.236-3.221-.123-.303-.535-1.524.117-3.176 0 0 1.007-.323 3.3 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.29-1.554 3.294-1.23 3.294-1.23.653 1.653.241 2.874.118 3.176.77.839 1.236 1.911 1.236 3.221 0 4.61-2.805 5.624-5.478 5.92.43.37.814 1.103.814 2.222 0 1.605-.014 2.897-.014 3.289 0 .323.19.698.801.579C20.565 21.796 24 17.299 24 12c0-6.627-5.373-12-12-12z"/>
+                </svg>
+                GitHub Repo
+            </a>
+        </footer>
     </div>
     <script>
         // Initialize chat history from localStorage
@@ -90,7 +102,7 @@
             inputField.value = '';
 
             // Display "Thinking..." label
-            const thinkingElement = addThinkingLabel();
+            addThinkingLabel();
 
             // Prepare the chat history to send to the backend (excluding thought processes)
             const historyForBackend = chatHistory.filter(entry => entry.sender !== 'thought_process');
@@ -125,17 +137,25 @@
                 function read() {
                     reader.read().then(({done, value}) => {
                         if (done) {
-                            // Remove "Thinking..." label if still present
-                            removeThinkingLabel(thinkingElement);
-
+                            // Remove any remaining thinking element
+                            removeThinkingLabel();
+                            // Remove current step element if still present
+                            removeCurrentStep();
                             // After streaming is done, parse and render the assistant's content
                             if (assistantContentElement && assistantContentBuffer) {
                                 renderMarkdownContent(assistantContentElement, assistantContentBuffer);
                             }
 
                             // Save assistant's message to chat history
-                            chatHistory.push({ sender: 'assistant', text: assistantContentBuffer, isMarkdown: true });
-                            saveChatHistory();
+                            if (assistantContentBuffer) {
+                                chatHistory.push({ sender: 'assistant', text: assistantContentBuffer, isMarkdown: true });
+                                saveChatHistory();
+                            }
+
+                            // After all steps and assistant's final answer are displayed, show the "Show Thought Process" button
+                            if (thoughtProcess) {
+                                addThoughtProcessButton(thoughtProcess);
+                            }
 
                             return;
                         }
@@ -154,15 +174,24 @@
                                 let dataStr = message.slice(6).trim(); // Remove 'data: ' and trim
                                 if (dataStr === '[DONE]') {
                                     // Streaming finished
-                                    removeThinkingLabel(thinkingElement);
+                                    removeThinkingLabel();
+                                    removeCurrentStep();
+
                                     // After streaming is done, parse and render the assistant's content
                                     if (assistantContentElement && assistantContentBuffer) {
                                         renderMarkdownContent(assistantContentElement, assistantContentBuffer);
                                     }
 
                                     // Save assistant's message to chat history
-                                    chatHistory.push({ sender: 'assistant', text: assistantContentBuffer, isMarkdown: true });
-                                    saveChatHistory();
+                                    if (assistantContentBuffer) {
+                                        chatHistory.push({ sender: 'assistant', text: assistantContentBuffer, isMarkdown: true });
+                                        saveChatHistory();
+                                    }
+
+                                    // After all steps and assistant's final answer are displayed, show the "Show Thought Process" button
+                                    if (thoughtProcess) {
+                                        addThoughtProcessButton(thoughtProcess);
+                                    }
 
                                     return;
                                 }
@@ -170,38 +199,51 @@
                                 try {
                                     let data = JSON.parse(dataStr);
 
-                                    if (!isStreaming && data.thought_process) {
-                                        // Received thought process
-                                        thoughtProcess = data.thought_process;
-                                        removeThinkingLabel(thinkingElement);
-                                        addThoughtProcessButton(thoughtProcess);
+                                    if (data.error) {
+                                        console.error('Error from server:', data.error);
+                                        removeThinkingLabel();
+                                        removeCurrentStep();
+                                        addMessageToChat('assistant', 'Error: ' + data.error);
+                                        return;
+                                    }
+
+                                    if (data.current_step) {
+                                        // Received current step title
+                                        // Remove "Thinking..." label if it's still there
+                                        removeThinkingLabel();
+                                        displayCurrentStep(data.current_step);
+                                    } else if (data.full_thought_process) {
+                                        // Received full thought process
+                                        thoughtProcess = data.full_thought_process;
 
                                         // Save the thought process in chatHistory
                                         chatHistory.push({ sender: 'thought_process', text: thoughtProcess });
                                         saveChatHistory();
 
-                                        // Prepare the assistant message element
-                                        ({ messageElement: assistantMessageElement, contentElement: assistantContentElement } = addMessageToChat('assistant', '', true));
-                                        isStreaming = true;
-                                    } else if (isStreaming && data.choices && data.choices[0].delta) {
+                                        // Remove the current step element
+                                        removeCurrentStep();
+                                    } else if (data.choices && data.choices[0].delta) {
+                                        // Streaming final answer
                                         let content = data.choices[0].delta.content || '';
+
+                                        if (!isStreaming) {
+                                            // Prepare the assistant message element
+                                            ({ messageElement: assistantMessageElement, contentElement: assistantContentElement } = addMessageToChat('assistant', '', true));
+                                            isStreaming = true;
+                                        }
 
                                         // Append content to the assistant's message buffer
                                         assistantContentBuffer += content;
 
                                         // Render the partial content
                                         renderMarkdownContent(assistantContentElement, assistantContentBuffer);
-                                    } else if (data.error) {
-                                        console.error('Error from server:', data.error);
-                                        removeThinkingLabel(thinkingElement);
-                                        addMessageToChat('assistant', 'Error: ' + data.error);
-                                        return;
                                     }
                                 } catch (e) {
                                     console.error('Error parsing JSON:', e, 'Data:', dataStr);
-                                    removeThinkingLabel(thinkingElement);
-                                    addMessageToChat('assistant', 'Error parsing response.');
-                                    return;
+                                    // Handle incomplete JSON data
+                                    // Accumulate incomplete data for the next read
+                                    buffer = dataStr + '\n\n' + buffer;
+                                    continue;
                                 }
                             }
                         }
@@ -210,7 +252,8 @@
                         read();
                     }).catch(error => {
                         console.error('Error reading stream:', error);
-                        removeThinkingLabel(thinkingElement);
+                        removeThinkingLabel();
+                        removeCurrentStep();
                         addMessageToChat('assistant', 'Error reading stream.');
                     });
                 }
@@ -220,7 +263,8 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                removeThinkingLabel(thinkingElement);
+                removeThinkingLabel();
+                removeCurrentStep();
                 addMessageToChat('assistant', 'Error: Unable to communicate with the server.');
             });
         });
@@ -237,45 +281,87 @@
             `;
             chatWindow.appendChild(thinkingElement);
             scrollChatToBottom();
-            return thinkingElement;
         }
 
         // Function to remove "Thinking..." label
-        function removeThinkingLabel(element) {
-            if (element && element.parentNode) {
-                element.parentNode.removeChild(element);
+        function removeThinkingLabel() {
+            const thinkingElement = document.getElementById('thinking-label');
+            if (thinkingElement && thinkingElement.parentNode) {
+                thinkingElement.parentNode.removeChild(thinkingElement);
             }
+        }
+
+        // Function to remove current step element
+        function removeCurrentStep() {
+            const stepElement = document.getElementById('current-step');
+            if (stepElement && stepElement.parentNode) {
+                stepElement.parentNode.removeChild(stepElement);
+            }
+        }
+
+        // Function to display current step with fade in/out effect
+        function displayCurrentStep(stepTitle) {
+            removeThinkingLabel(); // Ensure "Thinking..." label is removed
+            const chatWindow = document.getElementById('chat-window');
+            let stepElement = document.getElementById('current-step');
+
+            if (!stepElement) {
+                stepElement = document.createElement('div');
+                stepElement.id = 'current-step';
+                stepElement.className = 'flex items-center my-2';
+                chatWindow.appendChild(stepElement);
+            }
+
+            // Update the content of the step element with markdown rendering
+            const loaderElement = '<div class="loader mr-2"></div>';
+            const titleElement = document.createElement('div');
+            renderMarkdownContent(titleElement, stepTitle);
+
+            stepElement.innerHTML = '';
+            stepElement.insertAdjacentHTML('beforeend', loaderElement);
+            stepElement.appendChild(titleElement);
+
+            // Animate fade in
+            anime({
+                targets: stepElement,
+                opacity: [0, 1],
+                duration: 500,
+                easing: 'easeInOutQuad',
+            });
         }
 
         // Function to add "Show Thought Process" button with toggle
         function addThoughtProcessButton(thoughtProcess) {
-            const chatWindow = document.getElementById('chat-window');
-            const buttonContainer = document.createElement('div');
-            buttonContainer.className = 'my-2';
+    const chatWindow = document.getElementById('chat-window');
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'my-2';
 
-            const buttonElement = document.createElement('button');
-            buttonElement.textContent = 'Show Thought Process';
-            buttonElement.className = 'px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-md focus:outline-none';
-            buttonElement.addEventListener('click', function() {
-                if (thoughtElement.classList.contains('hidden')) {
-                    thoughtElement.classList.remove('hidden');
-                    buttonElement.textContent = 'Hide Thought Process';
-                } else {
-                    thoughtElement.classList.add('hidden');
-                    buttonElement.textContent = 'Show Thought Process';
-                }
-                scrollChatToBottom();
-            });
+    const buttonElement = document.createElement('button');
+    buttonElement.innerHTML = `Show Thought Process <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="16" height="16" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25L12 15.75 4.5 8.25"></path></svg>`; // Down arrow
+    buttonElement.className = 'text-blue-500 hover:underline cursor-pointer focus:outline-none inline-flex items-center'; // Adjusted styles
+    buttonElement.style.gap = '8px'; // Space between text and icon
 
-            const thoughtElement = document.createElement('div');
-            thoughtElement.className = 'thought-process bg-gray-800 p-4 rounded-md mt-2 hidden';
-            renderMarkdownContent(thoughtElement, thoughtProcess);
-
-            buttonContainer.appendChild(buttonElement);
-            buttonContainer.appendChild(thoughtElement);
-            chatWindow.appendChild(buttonContainer);
-            scrollChatToBottom();
+    buttonElement.addEventListener('click', function() {
+        if (thoughtElement.classList.contains('hidden')) {
+            thoughtElement.classList.remove('hidden');
+            buttonElement.innerHTML = `Hide Thought Process <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="16" height="16" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75L12 8.25l7.5 7.5"></path></svg>`;
+        } else {
+            thoughtElement.classList.add('hidden');
+            buttonElement.innerHTML = `Show Thought Process <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="16" height="16" stroke-width="1.5" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25L12 15.75 4.5 8.25"></path></svg>`;
         }
+        scrollChatToBottom();
+    });
+
+    const thoughtElement = document.createElement('div');
+    thoughtElement.className = 'thought-process bg-gray-800 p-4 rounded-md mt-2 hidden';
+    renderMarkdownContent(thoughtElement, thoughtProcess);
+
+    buttonContainer.appendChild(buttonElement);
+    buttonContainer.appendChild(thoughtElement);
+    chatWindow.appendChild(buttonContainer);
+    scrollChatToBottom();
+}
+
 
         // Function to display messages in the chat window
         function addMessageToChat(sender, text, isMarkdown = false, saveToHistory = true) {
@@ -296,7 +382,7 @@
 
             messageElement.appendChild(contentElement);
 
-            if (isMarkdown && sender === 'assistant') {
+            if (isMarkdown) {
                 renderMarkdownContent(contentElement, text);
             } else {
                 contentElement.textContent = text;
