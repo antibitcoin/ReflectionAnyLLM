@@ -128,6 +128,7 @@ Please note that different langugaes provide different results but the basic is 
 Here are the currently available ports:
 
 1. **Python Port by devinambron**: [PyThoughtChain](https://github.com/devinambron/PyThoughtChain) - A Python implementation of the ReflectionAnyLLM chain-of-thought reasoning.
+2. **CoT-at-Home by andrewginns**: [Cot-at-Home](https://github.com/andrewginns/CoT-at-Home) - This project enables any OpenAI-compatible API to automatically have Chain-of-Thought (CoT) reasoning. Allowing for transparently added CoT to use with any model.
 
 
 ## Contributing
