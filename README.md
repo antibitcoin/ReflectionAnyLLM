@@ -134,6 +134,11 @@ This project is licensed under the MIT License, meaning you're free to use, modi
 
 Feel free to explore, modify, and share your improvements! If you have any questions or encounter issues, don’t hesitate to reach out.
 
-## Ports
-You can create an issue and submit ports to other langugaes, I will be happy to list them here, don't forget to attribute the main project.
-1- devinambron Python port: https://github.com/devinambron/PyThoughtChain
+## Available Ports to Other Languages
+
+ReflectionAnyLLM can be easily adapted to various programming languages. If you create a port in another language, feel free to submit it by opening an issue on the repository, and I'll gladly list it here. Don't forget to attribute the original project when submitting your port!
+
+Here are the currently available ports:
+
+1. **Python Port by devinambron**: [PyThoughtChain](https://github.com/devinambron/PyThoughtChain) - A Python implementation of the ReflectionAnyLLM chain-of-thought reasoning.
+
