@@ -3,7 +3,7 @@
 
 
 **Online Demo**: [freemindgpt.com/reflectionanyllm](https://freemindgpt.com/reflectionanyllm/)  
-*Important*: This demo is running on OpenRouter's free tier, utilizing `Gemini-pro-1.5`, which is a relatively small model. While it showcases basic functionality, for more advanced use cases, models like GPT-4o, LLaMA 3.1 70b, or 405b would offer far better performance. The demo may also occasionally stop working if usage limits are exceeded.
+*Important*: This demo is running on OpenRouter's free tier, utilizing `Gemini-pro-1.5`, . While it showcases basic functionality, for more advanced use cases, models like GPT-4o, LLaMA 3.1 70b, or 405b would offer far better performance. The demo may also occasionally stop working if usage limits are exceeded.
 
 ---
 
