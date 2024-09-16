@@ -1,11 +1,9 @@
 # ReflectionAnyLLM
 ![A preview of it used with Gemma 2 9b LLM](https://raw.githubusercontent.com/antibitcoin/ReflectionAnyLLM/4f4dde0daf04a279ce995918cc9023b66cb7c14b/Screenshot%202024-09-15%20204649.png)
 
-[![Watch the Video](ReflectionAnyLLM.mp4)](ReflectionAnyLLM.mp4)  
-*Note: The video quality might not be optimal—apologies for that.*
 
 **Online Demo**: [freemindgpt.com/reflectionanyllm](https://freemindgpt.com/reflectionanyllm/)  
-*Important*: This demo is running on OpenRouter's free tier, utilizing `google/gemma-2-9b-it:free`, which is a relatively small model. While it showcases basic functionality, for more advanced use cases, models like GPT-4o, LLaMA 3.1 70b, or 405b would offer far better performance. The demo may also occasionally stop working if usage limits are exceeded.
+*Important*: This demo is running on OpenRouter's free tier, utilizing `Gemini-pro-1.5`, which is a relatively small model. While it showcases basic functionality, for more advanced use cases, models like GPT-4o, LLaMA 3.1 70b, or 405b would offer far better performance. The demo may also occasionally stop working if usage limits are exceeded.
 
 ---
 
