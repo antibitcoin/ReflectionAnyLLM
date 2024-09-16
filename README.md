@@ -125,6 +125,8 @@ If there’s interest from the community, I may continue developing and improvin
 
 ReflectionAnyLLM can be easily adapted to various programming languages. If you create a port in another language, feel free to submit it by opening an issue on the repository, and I'll gladly list it here. Don't forget to attribute the original project when submitting your port!
 
+Please note that different langugaes provide different results but the basic is the same, for example some might use a termnial, some might be a webui.
+
 Here are the currently available ports:
 
 1. **Python Port by devinambron**: [PyThoughtChain](https://github.com/devinambron/PyThoughtChain) - A Python implementation of the ReflectionAnyLLM chain-of-thought reasoning.
