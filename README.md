@@ -133,3 +133,7 @@ This project is licensed under the MIT License, meaning you're free to use, modi
 ---
 
 Feel free to explore, modify, and share your improvements! If you have any questions or encounter issues, don’t hesitate to reach out.
+
+## Ports
+You can create an issue and submit ports to other langugaes, I will be happy to list them here, don't forget to attribute the main project.
+1- devinambron Python port: https://github.com/devinambron/PyThoughtChain
