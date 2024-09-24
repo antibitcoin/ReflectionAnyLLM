@@ -177,7 +177,7 @@ $planSteps = array_filter($planSteps, function($line) {
     return trim($line) !== '';
 });
 $planSteps = array_values($planSteps); 
-
+$planContent = "1. " . join("\n2. ",$planSteps);
 sendSSE(['full_thought_process' => $planContent]);
 flush();
 
