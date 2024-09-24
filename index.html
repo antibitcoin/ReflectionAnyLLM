@@ -355,6 +355,7 @@
     const thoughtElement = document.createElement('div');
     thoughtElement.className = 'thought-process bg-gray-800 p-4 rounded-md mt-2 hidden';
     renderMarkdownContent(thoughtElement, thoughtProcess);
+    thoughtElement.children[0].classList.add('marker:text-blue-300','list-decimal','relative','left-4');
 
     buttonContainer.appendChild(buttonElement);
     buttonContainer.appendChild(thoughtElement);
